@@ -11,6 +11,7 @@ import BedStatusPage from "./allocation/BedStatusPage";
 import LabDashboard from "./labpharmacy/LabDashboard";
 import PharmacyDashboard from "./labpharmacy/PharmacyDashboard";
 import DischargePage from "./labpharmacy/DischargePage";
+import SimulationPage from "./simulation/SimulationPage";
 import ProtectedRoute from "./common/ProtectedRoute";
 
 export default function App() {
@@ -23,6 +24,8 @@ export default function App() {
 
         <Route path="/admin" element={<ProtectedRoute roles={["ADMIN"]}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute roles={["ADMIN"]}><AnalyticsDashboard /></ProtectedRoute>} />
+
+        <Route path="/simulation" element={<ProtectedRoute roles={["ADMIN"]}><SimulationPage /></ProtectedRoute>} />
 
         <Route path="/receptionist" element={<ProtectedRoute roles={["RECEPTIONIST"]}><ReceptionistDashboard /></ProtectedRoute>} />
         <Route path="/queue" element={<ProtectedRoute roles={["RECEPTIONIST", "DOCTOR", "ADMIN"]}><LiveQueueDashboard /></ProtectedRoute>} />
