@@ -9,10 +9,26 @@ services:
     region: oregon
     healthCheckPath: /health
     envVars:
-      - key: SPRING_DATASOURCE_URL
+      - key: DB_HOST
         fromDatabase:
           name: flowalloc-postgres
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: flowalloc-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: flowalloc-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: flowalloc-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: flowalloc-postgres
+          property: password
       - key: JWT_SECRET
         generateValue: true
 

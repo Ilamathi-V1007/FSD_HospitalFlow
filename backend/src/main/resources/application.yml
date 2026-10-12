@@ -6,7 +6,7 @@ spring:
     name: hospitalflow-backend
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hospitalflow}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:hospitalflow}}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
 
