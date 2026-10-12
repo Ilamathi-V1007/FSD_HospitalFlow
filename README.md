@@ -1,105 +1,146 @@
-# Patient Flow Coordination System (OPD)
+# FlowAlloc — Dynamic Patient Flow and Resource Optimization System
 
-A role-secured web system that moves outpatients from check-in to discharge. Instead of first-come-first-served, waiting patients are ranked by **triage urgency plus time waited**, doctors call the next patient from that ranking, and beds and lab requests are coordinated transactionally so resources are never double-booked. Staff see queues, doctors and beds update live.
+**Right patient. Right resource. Right time.**
 
-Full requirements, ownership rules and workflow are in [`docs/`](docs/) (see the project charter).
+FlowAlloc is an intelligent hospital operations and patient-flow management platform designed to eliminate OPD bottlenecks, prevent resource double-booking, and prioritize acute emergency arrivals dynamically over first-come-first-served (FCFS) queuing.
 
-## Run it
+---
 
-Requires Docker.
+## 1. Architecture & Port Reference
 
-```bash
-cp .env.example .env     # optional; defaults work for a demo
-docker compose up --build
+| Component | Port | Technology | Purpose |
+|---|---|---|---|
+| **Frontend Web App** | `5173` | React 19, Vite, React Router, Recharts | Role-specific clinical & administrative portals |
+| **Backend REST API** | `8082` (local) / `8081` (docker) | Java 17, Spring Boot 3.3.4, Spring Security | Transactional clinical workflows & priority engine |
+| **Database** | `5432` | PostgreSQL 16 | Relational persistence (`hospitalflow` schema) |
+| **API Documentation** | `8082/swagger-ui.html` | SpringDoc OpenAPI | Live interactive REST endpoint documentation |
+
+---
+
+## 2. Verified Demo Accounts
+
+Every demo account uses the secure password: **`Demo@1234`**
+
+| Department / Role | Email Address | Portal Route | Primary Operations |
+|---|---|---|---|
+| **Administrator** | `admin@patientflow.local` | `/login/admin` | Hospital metrics, bed registry, FCFS vs. Priority simulation |
+| **Receptionist** | `reception@patientflow.local` | `/login/receptionist` | Patient registration, triage category assignment (Levels 1–4), queue check-in |
+| **Doctor** | `doctor1@patientflow.local` | `/login/doctor` | Call next prioritized patient, order lab tests, prescribe medication, assign beds |
+| **Doctor (Alternative)** | `doctor2@patientflow.local` | `/login/doctor` | Secondary physician for concurrent allocation testing |
+| **Laboratory** | `lab@patientflow.local` | `/login/lab` | Process incoming diagnostic orders, record clinical test values |
+| **Pharmacy** | `pharmacy@patientflow.local` | `/login/pharmacy` | Review prescriptions, verify medication fulfillment, mark dispensed |
+
+---
+
+## 3. Local Startup Instructions
+
+### Step 1: Start PostgreSQL Database
+```powershell
+# From the project root (D:\PatientFlowOptimizationSystem\FSD_HospitalFlow)
+docker compose up -d postgres
 ```
+*Note: If running PostgreSQL locally on Windows, ensure the service is active on port `5432` with a database named `hospitalflow`.*
 
-| What | Where |
-|---|---|
-| App | http://localhost:3000 |
-| API docs (Swagger UI) | http://localhost:8080/swagger-ui.html |
-
-Demo accounts are created on first start (password for all: `Demo@1234`):
-
-| Role | Email |
-|---|---|
-| Administrator | admin@patientflow.local |
-| Receptionist | reception@patientflow.local |
-| Doctor | doctor1@patientflow.local, doctor2@patientflow.local |
-| Lab technician | lab@patientflow.local |
-| Pharmacist | pharmacy@patientflow.local |
-
-Set `SEED_DEMO_DATA=false` (and a real `JWT_SECRET`) outside demos.
-
-### Local development
-
-```bash
-# Database
-docker compose up db -d
-# Backend (needs Java 21 and Maven); API on :8080
-cd backend && mvn spring-boot:run
-# Frontend (needs Node 20); dev server on :5173 and proxies /api and /ws to :8080
-cd frontend && npm install && npm run dev
+### Step 2: Start Spring Boot Backend
+```powershell
+cd backend
+mvn "-Dmaven.test.skip=true" spring-boot:run "-Dspring-boot.run.arguments=--server.port=8082"
 ```
+The backend initializes the database and automatically runs `DemoDataSeeder` to populate synthetic patients, active appointments, beds, lab tests, and prescriptions if absent.
 
-Backend tests use Testcontainers, so Docker must be running: `cd backend && mvn verify`.
-
-## Demo script (about 5 minutes)
-
-Use two browsers or windows so you can see live updates.
-
-1. Sign in as **Receptionist**. Register two patients and check them in: one at triage 4 with "mild cough", one at triage 1 with "chest pain". Open **Queue**: the emergency is first even though they arrived second.
-2. Sign in as **Doctor** (second window). Set status to Available and **Call next patient**: the emergency patient is called. The queue in the first window updates without a refresh.
-3. As the doctor, **Request lab test**, **Add prescription**, **Assign bed**. Try completing the consultation: it works, but discharge will be blocked until the lab result is in.
-4. Sign in as **Lab technician** and **Enter result**. The doctor and discharge screens update.
-5. As the doctor or receptionist, open **Discharge**, review, and discharge the patient. The bed is freed and the visit is closed.
-6. Sign in as **Administrator** to see overview numbers and manage staff accounts. Open **Beds** and try assigning the same bed from two windows at once: only one succeeds.
-
-## How it works
-
-**Priority score:** `score = baseWeight[triage level] + 1 point per minute waited`, with base weights 100 / 60 / 30 / 10 for levels 1 to 4 (emergency, urgent, semi-urgent, non-urgent). A non-urgent patient overtakes a fresh semi-urgent one after 20 minutes, a fresh urgent one after 50 and a fresh emergency after 90, so nobody starves. Ties go to the earlier check-in. The engine is plain Java in `backend/.../queue/engine/PriorityScorer.java` with no Spring or database dependency, so the v1.1 simulator can reuse it unchanged.
-
-**Estimated wait:** patients ahead ÷ doctors available × average consultation time.
-
-**Conflict prevention:** bed assignment locks the bed row (`SELECT ... FOR UPDATE`), and partial unique indexes in the database refuse a second active assignment as a backstop. `call-next` locks the doctor row and claims the top-ranked waiting visit atomically.
-
-**Discharge** is one transaction across modules: write the summary, release the bed, close the visit.
-
-**Live updates:** the server publishes small "something changed" events over WebSocket (STOMP). They carry no patient data; clients refetch through the authenticated REST API.
-
-## Project layout and ownership
-
+### Step 3: Start React Frontend
+```powershell
+cd ../frontend
+npm install
+npm run dev
 ```
-backend/src/main/java/com/patientflow/
-  auth/         users, login, JWT, security config         (Platform, Auth, Analytics, Simulation owner)
-  queue/        patients, visits, queue, scoring engine    (Intake and Queue owner)
-  allocation/   doctors, consultations, beds               (Allocation owner)
-  labpharmacy/  lab requests, prescriptions, discharge     (Lab, Pharmacy, Discharge owner)
-  common/       roles, errors, live updates, seeding       (shared, change by agreement)
-backend/src/main/resources/db/migration/   Flyway migrations (V1 schema, V2 beds)
-frontend/src/{auth,queue,allocation,labpharmacy,common}/   matching UI folders
-```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
-Rules: cross-module calls go through public service methods, never another module's tables. Schema changes are new Flyway migration files. Roles and endpoint access are enforced with `@PreAuthorize`; see Swagger UI for every endpoint.
+---
 
-## Contributing (team workflow)
+## 4. End-to-End Demonstration Script
 
-The v1.0 baseline (skeleton plus all v1 modules) was generated with AI by the lead, verified locally, and pushed as the first commits. From here:
+Follow this sequence for a college project evaluation or demonstration:
 
-1. Clone, run `docker compose up --build`, and read your own module.
-2. Pick an issue labelled with your module (backlog in [`docs/V1.1_ISSUES.md`](docs/V1.1_ISSUES.md)).
-3. Branch from `dev`: `feature/<module>-<short-desc>`.
-4. Commit with a module prefix (`queue: add aging tests`), push, and open a PR into `dev`. CI must pass; the lead reviews.
+### Phase A: Landing Page & Role Selection
+1. Open [http://localhost:5173](http://localhost:5173).
+2. Observe the **FlowAlloc: Quiet Precision** visual identity and the 5 portal options.
+3. Click **Receptionist** to navigate to `/login/receptionist`.
 
-Nobody commits directly to `main` or `dev`.
+### Phase B: Intake & Triage (Receptionist)
+1. Sign in with `reception@patientflow.local` / `Demo@1234`.
+2. Under **1. Register Patient**, enter:
+   - Full Name: `Vikramaditya Rao`
+   - Age: `52`, Gender: `Male`, Contact: `+91 9845098765`
+   - Click **Register Patient Record**.
+3. Under **2. Triage & Queue Check-In**:
+   - Select `Vikramaditya Rao`.
+   - Select **Level 1 — Emergency (Immediate, Base 100)**.
+   - Enter Symptoms: `Acute retrosternal chest pain radiating to left shoulder, diaphoresis`.
+   - Click **Confirm Check-In to Queue**.
+4. In the sidebar, click **Live Queue** (`/queue`):
+   - Notice `Vikramaditya Rao` is dynamically placed at the top (`#1 [NEXT]`) with Priority Score `100.0`.
+5. Click **Sign out**.
 
-## Known limitations (v1.0)
+### Phase C: Examination & Orders (Doctor)
+1. Select **Doctor** on the landing page (`/login/doctor`).
+2. Sign in with `doctor1@patientflow.local` / `Demo@1234`.
+3. Click **✦ Call Next Patient from Queue**.
+4. Observe the state transition:
+   - Status switches to **IN CONSULTATION**.
+   - Vikramaditya Rao's clinical complaint is loaded.
+5. **Order Laboratory Investigation:**
+   - Under *Order Diagnostic Laboratory Test*, enter `Stat High-Sensitivity Troponin I & ECG` and click **Order Test**.
+6. **Prescribe Medication:**
+   - Under *Prescribe Medication*, enter `Aspirin 325mg chewable stat, Clopidogrel 300mg stat, Sorbitrate 5mg SL` and click **Record Prescription**.
+7. **Allocate Hospital Bed:**
+   - Select an available bed (e.g. `Bed 102`) and click **Assign Bed**.
+8. Click **✓ Conclude Consultation**.
+9. Click **Sign out**.
 
-- Profile page, analytics and the FCFS-vs-priority simulation are not built yet (v1.1). The pharmacist page polls every 15 seconds because the server publishes no live event for prescriptions.
-- Demo accounts and a default JWT secret exist for convenience; change both before any real deployment.
-- WebSocket origins are open and the STOMP connection is not authenticated (events contain no patient data).
-- Beds are not tied to wards beyond a label; there is no inpatient management after OPD discharge.
-- Patient data is synthetic. Do not enter real patient information.
+### Phase D: Laboratory Execution (Lab Tech)
+1. Select **Laboratory** on the landing page (`/login/lab`).
+2. Sign in with `lab@patientflow.local` / `Demo@1234`.
+3. In the **Pending Orders** queue, locate Vikramaditya Rao's test:
+   - Click **Enter Result**.
+   - Input: `Troponin I: 0.28 ng/mL (Positive for acute myocardial injury). ST elevation in leads V1-V4.`
+   - Click **Save & Complete Order**.
+4. The test moves to the *Recent Completed Tests* audit table.
+5. Click **Sign out**.
 
-## AI-use statement
+### Phase E: Medication Fulfillment (Pharmacy)
+1. Select **Pharmacy** on the landing page (`/login/pharmacy`).
+2. Sign in with `pharmacy@patientflow.local` / `Demo@1234`.
+3. In the **Pending Orders** list, locate the prescription for Vikramaditya Rao.
+4. Click **✓ Mark Dispensed**.
+5. The order updates and moves to *Recent Dispensed Medications*.
+6. Click **Sign out**.
 
-The v1.0 skeleton and baseline modules were generated with Claude (Anthropic), then run, tested and reviewed by the team. Course policy on AI-assisted work should be confirmed and this section updated if disclosure is required.
+### Phase F: Discharge Verification & Bed Release
+1. Sign in as either `doctor1@patientflow.local` or `reception@patientflow.local`.
+2. Click **Discharge Desk** (`/discharge`).
+3. Notice Vikramaditya Rao is now listed under **Patients Eligible for Discharge** because all lab orders have been completed.
+4. Click **Process Discharge**:
+   - Enter Summary: `Acute coronary syndrome medically stabilized. Patient transferred to CCU telemetry.`
+   - Click **Confirm Discharge & Release Bed**.
+5. Open **Bed Capacity** (`/beds`):
+   - Verify that `Bed 102` has immediately transitioned back from `OCCUPIED` to **AVAILABLE** (Green).
+
+### Phase G: Administrative Simulation (Admin)
+1. Select **Administrator** on the landing page (`/login/admin`).
+2. Sign in with `admin@patientflow.local` / `Demo@1234`.
+3. Review the hospital-wide KPI cards (Queue Count, Emergency Count, Bed Occupancy, Pending Labs & Prescriptions).
+4. Click **Scheduler Simulation** (`/simulation`).
+5. Click **Run simulation**.
+6. Review the Recharts graph and table comparing **FCFS vs. Priority Scheduling**:
+   - Demonstrates that Priority Scheduling drastically reduces wait times for Level 1 (Emergency) and Level 2 (Urgent) patients without starving lower triage levels due to linear time aging (`+1 pt/min`).
+   - Click **Download results (CSV)**.
+
+---
+
+## 5. Security & Data Integrity Notes
+
+- All endpoints are secured with **stateless JWT tokens** passed via the `Authorization: Bearer <token>` header.
+- Endpoint authorization is strictly enforced in the Spring Boot backend with `@PreAuthorize("hasRole(...)")`.
+- `DemoDataSeeder` uses idempotent checks to prevent duplicate records upon consecutive server restarts.
+- The visual identity adheres to the **FlowAlloc: Quiet Precision** design system (Deep Navy `#142C40`, Muted Teal `#147D73`, Off-white `#F7F8F7`, and restrained status semantics).

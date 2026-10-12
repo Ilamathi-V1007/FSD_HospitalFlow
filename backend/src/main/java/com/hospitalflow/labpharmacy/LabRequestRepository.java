@@ -5,4 +5,5 @@ import java.util.List;
 
 public interface LabRequestRepository extends JpaRepository<LabRequest, Long> {
     List<LabRequest> findByStatus(LabRequest.Status status);
+    List<LabRequest> findByAppointmentId(Long appointmentId);
 }

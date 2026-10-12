@@ -1,12 +1,12 @@
 server:
-  port: 8080
+  port: ${PORT:8082}
 
 spring:
   application:
     name: hospitalflow-backend
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hospitalflow
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hospitalflow}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
 
@@ -22,6 +22,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:change-this-to-a-long-random-secret-in-production}
     expiration-ms: 3600000   # 1 hour
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
 
 springdoc:
   swagger-ui:
