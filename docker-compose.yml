@@ -25,7 +25,7 @@ services:
       DB_PASSWORD: postgres
       JWT_SECRET: dev-only-secret-change-in-production
     ports:
-      - "8080:8080"
+      - "8081:8080"
 
   frontend:
     build: ./frontend
