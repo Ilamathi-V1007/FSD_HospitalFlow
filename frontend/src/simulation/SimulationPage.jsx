@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import Navbar from "../common/Navbar";
+import AppShell from "../common/AppShell";
 import api from "../common/api";
 import "./simulation.css";
 
@@ -135,10 +135,8 @@ export default function SimulationPage() {
   const nonUrgent = result?.comparison[3];
 
   return (
-    <div className="page-shell">
-      <Navbar />
-      <main className="sim-page">
-        <h1>Scheduling Simulation</h1>
+    <AppShell title="Scheduler Simulation (FCFS vs. Priority)">
+      <div className="sim-page" style={{ padding: "0 0 2rem 0", maxWidth: "100%" }}>
         <p className="sim-intro">
           The same synthetic patients are run through first-come-first-served (FCFS) and our priority
           scheduler (base weight by triage level + 1 point per minute waited). Results pool all replications.
@@ -298,7 +296,7 @@ export default function SimulationPage() {
             </button>
           </section>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
