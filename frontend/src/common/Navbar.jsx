@@ -17,6 +17,9 @@ export default function Navbar() {
       <div className="navbar-brand">Patient Flow Coordination</div>
       <div className="navbar-user">
         <span>{name} · {role}</span>
+        {role === "ADMIN" && (
+          <button onClick={() => navigate("/simulation")}>Simulation</button>
+        )}
         <button onClick={() => navigate("/profile")}>Profile</button>
         <button onClick={logout}>Logout</button>
       </div>
