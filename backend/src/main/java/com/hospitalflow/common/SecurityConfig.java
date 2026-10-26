@@ -62,6 +62,7 @@ public class SecurityConfig {
         return http.build();
     }
     
+
 @Bean
 public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
@@ -74,7 +75,13 @@ public CorsConfigurationSource corsConfigurationSource() {
         "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
     ));
 
-    config.setAllowedHeaders(List.of("*"));
+    config.setAllowedHeaders(List.of(
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin"
+    ));
+
     config.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source =
@@ -84,5 +91,6 @@ public CorsConfigurationSource corsConfigurationSource() {
 
     return source;
 }
+
 
 }
