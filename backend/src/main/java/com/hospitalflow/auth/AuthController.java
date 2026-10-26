@@ -41,6 +41,14 @@ public class AuthController {
         return ResponseEntity.ok(authService.getAllStaff());
     }
 
+    @DeleteMapping("/staff/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteStaff(@PathVariable Long id) {
+        authService.deleteStaff(id);
+        return ResponseEntity.ok().build();
+    }
+
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
