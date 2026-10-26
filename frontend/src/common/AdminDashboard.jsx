@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "./AppShell";
 import api from "./api";
-
 const ROLES = [
   { value: "DOCTOR", label: "Doctor (Consultation Staff)" },
   { value: "RECEPTIONIST", label: "Receptionist (Intake & Triage)" },
