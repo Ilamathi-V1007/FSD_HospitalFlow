@@ -79,15 +79,53 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        String input = req.getEmail() != null ? req.getEmail().trim() : "";
+        String resolvedEmail = resolveEmail(input);
+
+        User user = userRepository.findByEmailIgnoreCase(resolvedEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(input))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
+        boolean matches = passwordEncoder.matches(req.getPassword(), user.getPasswordHash());
+        // For development and demo resilience, allow Demo@1234 regardless of case if it is the demo password
+        if (!matches && req.getPassword() != null && req.getPassword().equalsIgnoreCase("Demo@1234")) {
+            matches = passwordEncoder.matches("Demo@1234", user.getPasswordHash());
+        }
+
+        if (!matches) {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getId());
         return new AuthResponse(token, user.getRole().name(), user.getName());
+    }
+
+    private String resolveEmail(String input) {
+        if (input == null) return "";
+        String lower = input.toLowerCase().trim();
+        switch (lower) {
+            case "admin":
+                return "admin@patientflow.local";
+            case "doctor":
+            case "doc":
+            case "doctor@patientflow.local":
+            case "doctor1":
+                return "doctor1@patientflow.local";
+            case "doctor2":
+                return "doctor2@patientflow.local";
+            case "reception":
+            case "receptionist":
+                return "reception@patientflow.local";
+            case "lab":
+            case "lab_tech":
+            case "labtech":
+                return "lab@patientflow.local";
+            case "pharmacy":
+            case "pharmacist":
+                return "pharmacy@patientflow.local";
+            default:
+                return lower;
+        }
     }
 
     private StaffUserDto toStaffUserDto(User u) {

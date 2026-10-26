@@ -71,7 +71,37 @@ CREATE TABLE prescriptions (
     id BIGSERIAL PRIMARY KEY,
     appointment_id BIGINT NOT NULL REFERENCES appointments(id),
     medicine_details TEXT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','DISPENSED'))
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','DISPENSED')),
+    dispensed_at TIMESTAMP,
+    dispensed_by VARCHAR(100)
+);
+
+-- ===== PHARMACY INVENTORY (additive; Hibernate ddl-auto=update creates these on existing DBs) =====
+CREATE TABLE medicines (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    strength VARCHAR(60),
+    dosage_form VARCHAR(60),
+    unit VARCHAR(30) NOT NULL,
+    quantity INT NOT NULL,
+    reorder_threshold INT NOT NULL,
+    medicine_key VARCHAR(300) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT uk_medicines_medicine_key UNIQUE (medicine_key),
+    CHECK (quantity >= 0 AND reorder_threshold >= 0)
+);
+
+CREATE TABLE stock_movements (
+    id BIGSERIAL PRIMARY KEY,
+    medicine_id BIGINT NOT NULL REFERENCES medicines(id),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('INITIAL','RESTOCK','DISPENSE')),
+    quantity_change INT NOT NULL,
+    quantity_after INT NOT NULL,
+    prescription_id BIGINT REFERENCES prescriptions(id),
+    performed_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT uk_stock_movements_prescription_medicine UNIQUE (prescription_id, medicine_id)
 );
 
 CREATE TABLE visit_summaries (

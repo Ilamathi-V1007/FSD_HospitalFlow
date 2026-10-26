@@ -81,10 +81,19 @@ public class DemoDataSeeder implements CommandLineRunner {
         // Standard Demo Staff Accounts with Demo@1234
         createUserIfAbsent("Admin Lead", "admin@patientflow.local", User.Role.ADMIN);
         createUserIfAbsent("Reception Desk", "reception@patientflow.local", User.Role.RECEPTIONIST);
+        User doc = createUserIfAbsent("Dr. Aris Thorne", "doctor@patientflow.local", User.Role.DOCTOR);
         User doc1 = createUserIfAbsent("Dr. Aris Thorne", "doctor1@patientflow.local", User.Role.DOCTOR);
         User doc2 = createUserIfAbsent("Dr. Maya Lin", "doctor2@patientflow.local", User.Role.DOCTOR);
         createUserIfAbsent("Clinical Lab", "lab@patientflow.local", User.Role.LAB_TECH);
         createUserIfAbsent("Central Pharmacy", "pharmacy@patientflow.local", User.Role.PHARMACIST);
+
+        if (doc != null && doctorRepository.findByUserId(doc.getId()).isEmpty()) {
+            Doctor d = new Doctor();
+            d.setUserId(doc.getId());
+            d.setDepartment("Emergency OPD");
+            d.setAvailabilityStatus(Doctor.AvailabilityStatus.AVAILABLE);
+            doctorRepository.save(d);
+        }
 
         if (doc1 != null && doctorRepository.findByUserId(doc1.getId()).isEmpty()) {
             Doctor d = new Doctor();
@@ -104,7 +113,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     }
 
     private User createUserIfAbsent(String name, String email, User.Role role) {
-        return userRepository.findByEmail(email).map(existing -> {
+        return userRepository.findByEmailIgnoreCase(email).map(existing -> {
             if (!passwordEncoder.matches("Demo@1234", existing.getPasswordHash())) {
                 existing.setPasswordHash(passwordEncoder.encode("Demo@1234"));
                 existing.setRole(role);
@@ -114,7 +123,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         }).orElseGet(() -> {
             User u = new User();
             u.setName(name);
-            u.setEmail(email);
+            u.setEmail(email.toLowerCase());
             u.setPasswordHash(passwordEncoder.encode("Demo@1234"));
             u.setRole(role);
             return userRepository.save(u);

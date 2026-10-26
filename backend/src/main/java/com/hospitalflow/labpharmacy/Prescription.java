@@ -2,6 +2,8 @@ package com.hospitalflow.labpharmacy;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "prescriptions")
 public class Prescription {
@@ -19,6 +21,13 @@ public class Prescription {
     @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
 
+    // Nullable: prescriptions dispensed before inventory tracking have no audit fields
+    @Column(name = "dispensed_at")
+    private LocalDateTime dispensedAt;
+
+    @Column(name = "dispensed_by", length = 100)
+    private String dispensedBy;
+
     public enum Status { PENDING, DISPENSED }
 
     public Prescription() {}
@@ -31,4 +40,8 @@ public class Prescription {
     public void setMedicineDetails(String medicineDetails) { this.medicineDetails = medicineDetails; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+    public LocalDateTime getDispensedAt() { return dispensedAt; }
+    public void setDispensedAt(LocalDateTime dispensedAt) { this.dispensedAt = dispensedAt; }
+    public String getDispensedBy() { return dispensedBy; }
+    public void setDispensedBy(String dispensedBy) { this.dispensedBy = dispensedBy; }
 }

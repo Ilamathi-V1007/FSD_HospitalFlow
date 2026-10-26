@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "../common/api";
 
@@ -50,6 +50,13 @@ export default function RoleLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Keep default email in sync when navigating between different role portals
+  useEffect(() => {
+    setEmail(config.defaultEmail);
+    setPassword("Demo@1234");
+    setError("");
+  }, [roleKey, config.defaultEmail]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -108,9 +115,9 @@ export default function RoleLoginPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Hospital Email</label>
+              <label className="form-label">Hospital Email or Handle</label>
               <input
-                type="email"
+                type="text"
                 required
                 className="form-control"
                 value={email}

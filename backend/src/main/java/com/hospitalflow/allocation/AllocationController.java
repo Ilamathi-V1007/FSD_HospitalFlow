@@ -199,7 +199,7 @@ public class AllocationController {
     // ─── Helpers & DTOs ──────────────────────────────────────────────────────────
 
     private Doctor getOrCreateDoctorForUser(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
         return doctorRepository.findByUserId(user.getId())
                 .orElseGet(() -> {

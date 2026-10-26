@@ -4,10 +4,14 @@ import com.hospitalflow.allocation.Appointment;
 import com.hospitalflow.allocation.AppointmentRepository;
 import com.hospitalflow.allocation.Bed;
 import com.hospitalflow.allocation.BedRepository;
+import com.hospitalflow.inventory.InventoryDtos.DispenseRequest;
+import com.hospitalflow.inventory.InventoryService;
 import com.hospitalflow.queue.Patient;
 import com.hospitalflow.queue.PatientRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -24,6 +28,7 @@ public class LabPharmacyController {
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final BedRepository bedRepository;
+    private final InventoryService inventoryService;
 
     public LabPharmacyController(
             LabRequestRepository labRequestRepository,
@@ -31,13 +36,15 @@ public class LabPharmacyController {
             VisitSummaryRepository visitSummaryRepository,
             AppointmentRepository appointmentRepository,
             PatientRepository patientRepository,
-            BedRepository bedRepository) {
+            BedRepository bedRepository,
+            InventoryService inventoryService) {
         this.labRequestRepository = labRequestRepository;
         this.prescriptionRepository = prescriptionRepository;
         this.visitSummaryRepository = visitSummaryRepository;
         this.appointmentRepository = appointmentRepository;
         this.patientRepository = patientRepository;
         this.bedRepository = bedRepository;
+        this.inventoryService = inventoryService;
     }
 
     // ─── LAB ENDPOINTS ──────────────────────────────────────────────────────────
@@ -121,17 +128,18 @@ public class LabPharmacyController {
         return ResponseEntity.ok(toPrescriptionDto(prescriptionRepository.save(p)));
     }
 
-    /** Pharmacist marks a prescription as dispensed */
+    /**
+     * Pharmacist marks a prescription as dispensed. The body lists the inventory medicines and
+     * quantities handed over; stock is checked and deducted in the same transaction (see InventoryService).
+     */
     @PostMapping("/prescriptions/{id}/dispense")
     @PreAuthorize("hasRole('PHARMACIST')")
-    public ResponseEntity<PrescriptionDto> dispensePrescription(@PathVariable Long id) {
-        Prescription p = prescriptionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Prescription not found"));
-        if (p.getStatus() == Prescription.Status.DISPENSED) {
-            throw new IllegalArgumentException("Prescription is already dispensed");
-        }
-        p.setStatus(Prescription.Status.DISPENSED);
-        return ResponseEntity.ok(toPrescriptionDto(prescriptionRepository.save(p)));
+    public ResponseEntity<PrescriptionDto> dispensePrescription(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) DispenseRequest body,
+            Authentication auth) {
+        Prescription p = inventoryService.dispense(id, body, auth.getName());
+        return ResponseEntity.ok(toPrescriptionDto(p));
     }
 
     // ─── DISCHARGE ENDPOINTS ─────────────────────────────────────────────────────

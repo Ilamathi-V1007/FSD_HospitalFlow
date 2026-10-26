@@ -62,14 +62,52 @@ export default function LoginPage() {
 
           {error && <div className="alert alert-danger">{error}</div>}
 
+          {/* Quick Demo Credentials Bar */}
+          <div style={{ marginBottom: "1.25rem", padding: "0.75rem", backgroundColor: "var(--surface-muted, #f8f9fa)", borderRadius: "var(--radius-xs, 4px)", border: "1px solid var(--rule, #e9ecef)" }}>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-muted, #6c757d)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+              Quick Demo Fill (Password: Demo@1234)
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {[
+                { label: "Admin", email: "admin@patientflow.local" },
+                { label: "Doctor", email: "doctor1@patientflow.local" },
+                { label: "Reception", email: "reception@patientflow.local" },
+                { label: "Lab", email: "lab@patientflow.local" },
+                { label: "Pharmacy", email: "pharmacy@patientflow.local" },
+              ].map((role) => (
+                <button
+                  key={role.label}
+                  type="button"
+                  onClick={() => {
+                    setEmail(role.email);
+                    setPassword("Demo@1234");
+                    setError("");
+                  }}
+                  style={{
+                    fontSize: "0.74rem",
+                    padding: "3px 8px",
+                    borderRadius: "3px",
+                    border: "1px solid var(--petrol, #176B63)",
+                    backgroundColor: email === role.email ? "var(--petrol, #176B63)" : "#FFFFFF",
+                    color: email === role.email ? "#FFFFFF" : "var(--petrol, #176B63)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {role.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Email Address</label>
+              <label className="form-label">Email Address or Handle</label>
               <input
-                type="email"
+                type="text"
                 required
                 className="form-control"
-                placeholder="name@patientflow.local"
+                placeholder="e.g. admin, doctor, or doctor1@patientflow.local"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -90,6 +128,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 className="form-control"
+                placeholder="Demo@1234"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

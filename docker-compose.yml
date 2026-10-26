@@ -21,17 +21,22 @@ services:
       - postgres
     environment:
       DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hospitalflow
       DB_USER: postgres
       DB_PASSWORD: postgres
+      PORT: 8080
       JWT_SECRET: dev-only-secret-change-in-production
     ports:
-      - "8081:8080"
+      - "8082:8080"
 
   frontend:
     build: ./frontend
     container_name: hospitalflow-frontend
     depends_on:
       - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8082/api
     ports:
       - "5173:5173"
 
