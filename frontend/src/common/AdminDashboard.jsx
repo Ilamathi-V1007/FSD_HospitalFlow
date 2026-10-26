@@ -343,6 +343,16 @@ export default function AdminDashboard() {
                         <td style={{ padding: "0.65rem 0.75rem", color: "var(--teal)", fontWeight: 600 }}>
                           Active
                         </td>
+                        <td style={{ padding: "0.65rem 0.75rem" }}>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteStaff(user.id)}
+                            style={{ fontSize: "0.7rem" }}
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
