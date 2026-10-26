@@ -53,6 +53,20 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Delete staff member (admin only)
+  const handleDeleteStaff = async (id) => {
+    if (window.confirm('Are you sure you want to delete this staff member?')) {
+      try {
+        await api.delete(`/auth/staff/${id}`);
+        // Refresh staff list after deletion
+        const refreshed = await api.get('/auth/staff');
+        setStaffList(refreshed.data || []);
+      } catch (err) {
+        alert('Failed to delete staff: ' + (err.response?.data?.error || err.message));
+      }
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -280,6 +294,7 @@ export default function AdminDashboard() {
                       <th style={{ padding: "0.6rem 0.75rem", borderBottom: "1px solid var(--border)" }}>Email / Username</th>
                       <th style={{ padding: "0.6rem 0.75rem", borderBottom: "1px solid var(--border)" }}>Assigned Role</th>
                       <th style={{ padding: "0.6rem 0.75rem", borderBottom: "1px solid var(--border)" }}>Account Status</th>
+                      <th style={{ padding: "0.6rem 0.75rem", borderBottom: "1px solid var(--border)" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,6 +342,16 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: "0.65rem 0.75rem", color: "var(--teal)", fontWeight: 600 }}>
                           Active
+                        </td>
+                        <td style={{ padding: "0.65rem 0.75rem" }}>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteStaff(user.id)}
+                            style={{ fontSize: "0.7rem" }}
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}

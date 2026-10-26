@@ -137,4 +137,14 @@ public class AuthService {
                 u.getCreatedAt()
         );
     }
+    
+    @Transactional
+    public void deleteStaff(Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Staff member not found"));
+        if (user.getRole() == User.Role.DOCTOR) {
+            doctorRepository.findByUserId(id).ifPresent(doctorRepository::delete);
+        }
+        userRepository.deleteById(id);
+    }
 }
